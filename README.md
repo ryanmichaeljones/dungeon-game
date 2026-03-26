@@ -1,3 +1,3 @@
-# Dungeon-Generator
-A procedural dungeon generator from university final year project
+# Dungeon game - work in progress
+Game based on my final year dissertation with procedurally generated rooms and tunnels
 
