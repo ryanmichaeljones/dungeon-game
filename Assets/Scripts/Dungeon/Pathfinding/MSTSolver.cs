@@ -36,18 +36,24 @@ namespace Assets.Scripts
                 }
             }
 
-            List<(Coordinate From, Coordinate To)> solution = new(vertices);
+            List<(Coordinate From, Coordinate To)> paths = GeneratePaths(roomPositions, vertices, parents);
+            return paths;
+        }
+
+        private static List<(Coordinate From, Coordinate To)> GeneratePaths(ReadOnlyCollection<Coordinate> roomPositions, int vertices, int[] parents)
+        {
+            List<(Coordinate From, Coordinate To)> paths = new(vertices);
 
             for (int v = 1; v < vertices; v++)
             {
                 int parent = parents[v];
                 Coordinate parentPosition = roomPositions[parent];
                 Coordinate nextPosition = roomPositions[v];
-
-                solution.Add((parentPosition, nextPosition));
+                (Coordinate parentPosition, Coordinate nextPosition) path = (parentPosition, nextPosition);
+                paths.Add(((Coordinate From, Coordinate To))path);
             }
 
-            return solution;
+            return paths;
         }
 
         private static int[,] GenerateRoomGraph(ReadOnlyCollection<Coordinate> roomPositions)

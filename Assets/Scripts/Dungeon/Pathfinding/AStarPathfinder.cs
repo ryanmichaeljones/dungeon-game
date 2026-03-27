@@ -8,66 +8,75 @@ namespace Assets.Scripts
         public static List<Coordinate> Solve(Coordinate startPosition, Coordinate endPosition, int dungeonRadius)
         {
             PathNode[,] grid = CreateGrid(startPosition, endPosition, dungeonRadius);
-            SortedSet<PathNode> openSet = new(Comparer<PathNode>.Create((a, b) =>
-            {
-                int cmp = a.FCost.CompareTo(b.FCost);
-                if (cmp != 0) return cmp;
-                cmp = a.Coordinate.X.CompareTo(b.Coordinate.X);
-                if (cmp != 0) return cmp;
-                return a.Coordinate.Z.CompareTo(b.Coordinate.Z);
-            }));
+            SortedSet<PathNode> openSet = CreateOpenSet();
             HashSet<PathNode> closedSet = new();
-
             PathNode startNode = grid[startPosition.X, startPosition.Z];
             openSet.Add(startNode);
 
             while (openSet.Count > 0)
             {
-                PathNode position = openSet.Min;
-                openSet.Remove(position);
-                closedSet.Add(position);
-                bool pathFound = position.Coordinate.X == endPosition.X && position.Coordinate.Z == endPosition.Z;
+                PathNode node = openSet.Min;
+                openSet.Remove(node);
+                closedSet.Add(node);
+                bool pathFound = node.Coordinate.X == endPosition.X && node.Coordinate.Z == endPosition.Z;
 
                 if (pathFound)
                 {
                     openSet.Clear();
-
-                    List<Coordinate> path = new();
-
-                    while (position.Coordinate.X != startPosition.X || position.Coordinate.Z != startPosition.Z)
-                    {
-                        path.Add(new Coordinate(position.Coordinate.X, position.Coordinate.Z));
-                        position = position.Parent;
-                    }
-
-                    path.Add(new Coordinate(startPosition.X, startPosition.Z));
-                    path.Reverse();
-
+                    List<Coordinate> path = GeneratePathSolution(startPosition, ref node);
                     return path;
                 }
                 else
                 {
-                    List<PathNode> neighbourPositions = GetCurrentNeighbours(position, grid, dungeonRadius);
-
-                    foreach (PathNode neighbourPosition in neighbourPositions)
-                    {
-                        bool notExistingPosition = openSet.Contains(neighbourPosition) == false;
-                        bool notVisitedPosition = closedSet.Contains(neighbourPosition) == false;
-
-                        if (notExistingPosition && notVisitedPosition)
-                        {
-                            InvestigateNewPath(grid, openSet, position, neighbourPosition);
-                        }
-                        else if (notVisitedPosition)
-                        {
-                            TraverseExistingPath(grid, openSet, position, neighbourPosition);
-                        }
-                    }
+                    List<PathNode> neighbourPositions = GetCurrentNeighbours(node, grid, dungeonRadius);
+                    InvestigateNeighbours(grid, openSet, closedSet, node, neighbourPositions);
                 }
             }
 
             return new List<Coordinate>();
         }
+
+        private static void InvestigateNeighbours(PathNode[,] grid, SortedSet<PathNode> openSet, HashSet<PathNode> closedSet, PathNode node, List<PathNode> neighbourPositions)
+        {
+            foreach (PathNode neighbourPosition in neighbourPositions)
+            {
+                bool notExistingPosition = openSet.Contains(neighbourPosition) == false;
+                bool notVisitedPosition = closedSet.Contains(neighbourPosition) == false;
+
+                if (notExistingPosition && notVisitedPosition)
+                {
+                    InvestigateNewPath(grid, openSet, node, neighbourPosition);
+                }
+                else if (notVisitedPosition)
+                {
+                    TraverseExistingPath(grid, openSet, node, neighbourPosition);
+                }
+            }
+        }
+
+        private static List<Coordinate> GeneratePathSolution(Coordinate startPosition, ref PathNode node)
+        {
+            List<Coordinate> path = new();
+
+            while (node.Coordinate.X != startPosition.X || node.Coordinate.Z != startPosition.Z)
+            {
+                path.Add(new Coordinate(node.Coordinate.X, node.Coordinate.Z));
+                node = node.Parent;
+            }
+
+            path.Add(new Coordinate(startPosition.X, startPosition.Z));
+            path.Reverse();
+            return path;
+        }
+
+        private static SortedSet<PathNode> CreateOpenSet() => new(Comparer<PathNode>.Create((a, b) =>
+        {
+            int cmp = a.FCost.CompareTo(b.FCost);
+            if (cmp != 0) return cmp;
+            cmp = a.Coordinate.X.CompareTo(b.Coordinate.X);
+            if (cmp != 0) return cmp;
+            return a.Coordinate.Z.CompareTo(b.Coordinate.Z);
+        }));
 
         private static void TraverseExistingPath(PathNode[,] grid, SortedSet<PathNode> openSet, PathNode position, PathNode neighbourPosition)
         {

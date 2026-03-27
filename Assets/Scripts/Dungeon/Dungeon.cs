@@ -23,9 +23,9 @@ namespace Assets.Scripts
         public void Initialize(int roomCount, int dungeonRadius)
         {
             ReadOnlyCollection<Coordinate> roomPositions = _roomPlacer.PlaceRooms(roomCount, dungeonRadius);
-            List<(Coordinate From, Coordinate To)> solutions = MSTSolver.Solve(roomPositions);
+            List<(Coordinate From, Coordinate To)> paths = MSTSolver.Solve(roomPositions);
 
-            foreach ((Coordinate From, Coordinate To) in solutions)
+            foreach ((Coordinate From, Coordinate To) in paths)
             {
                 List<Coordinate> path = AStarPathfinder.Solve(From, To, dungeonRadius);
                 _tunnelPlacer.PlaceTunnels(path, _roomPlacer.IsInsideAnyRoom);
