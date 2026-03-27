@@ -28,28 +28,28 @@ namespace Assets.Scripts
                 }
                 else
                 {
-                    List<PathNode> neighbourPositions = GetCurrentNeighbours(node, grid, dungeonRadius);
-                    InvestigateNeighbours(grid, openSet, closedSet, node, neighbourPositions);
+                    List<PathNode> neighbourNodes = GetCurrentNeighbours(node, grid, dungeonRadius);
+                    InvestigateNeighbours(grid, openSet, closedSet, node, neighbourNodes);
                 }
             }
 
             return new List<Coordinate>();
         }
 
-        private static void InvestigateNeighbours(PathNode[,] grid, SortedSet<PathNode> openSet, HashSet<PathNode> closedSet, PathNode node, List<PathNode> neighbourPositions)
+        private static void InvestigateNeighbours(PathNode[,] grid, SortedSet<PathNode> openSet, HashSet<PathNode> closedSet, PathNode node, List<PathNode> neighbourNodes)
         {
-            foreach (PathNode neighbourPosition in neighbourPositions)
+            foreach (PathNode neighbourNode in neighbourNodes)
             {
-                bool notExistingPosition = openSet.Contains(neighbourPosition) == false;
-                bool notVisitedPosition = closedSet.Contains(neighbourPosition) == false;
+                bool notExistingNode = openSet.Contains(neighbourNode) == false;
+                bool notVisitedNode = closedSet.Contains(neighbourNode) == false;
 
-                if (notExistingPosition && notVisitedPosition)
+                if (notExistingNode && notVisitedNode)
                 {
-                    InvestigateNewPath(grid, openSet, node, neighbourPosition);
+                    InvestigateNewPath(grid, openSet, node, neighbourNode);
                 }
-                else if (notVisitedPosition)
+                else if (notVisitedNode)
                 {
-                    TraverseExistingPath(grid, openSet, node, neighbourPosition);
+                    TraverseExistingPath(grid, openSet, node, neighbourNode);
                 }
             }
         }
@@ -78,35 +78,35 @@ namespace Assets.Scripts
             return a.Coordinate.Z.CompareTo(b.Coordinate.Z);
         }));
 
-        private static void TraverseExistingPath(PathNode[,] grid, SortedSet<PathNode> openSet, PathNode position, PathNode neighbourPosition)
+        private static void TraverseExistingPath(PathNode[,] grid, SortedSet<PathNode> openSet, PathNode node, PathNode neighbourNode)
         {
-            int currentGCost = position.GCost + 1;
-            if (currentGCost < neighbourPosition.GCost)
+            int currentGCost = node.GCost + 1;
+            if (currentGCost < neighbourNode.GCost)
             {
-                bool wasInOpenSet = openSet.Remove(neighbourPosition);
+                bool wasInOpenSet = openSet.Remove(neighbourNode);
 
-                neighbourPosition.GCost = currentGCost;
-                neighbourPosition.FCost = neighbourPosition.GCost + neighbourPosition.HCost;
-                neighbourPosition.Parent = position;
+                neighbourNode.GCost = currentGCost;
+                neighbourNode.FCost = neighbourNode.GCost + neighbourNode.HCost;
+                neighbourNode.Parent = node;
 
-                grid[neighbourPosition.Coordinate.X, neighbourPosition.Coordinate.Z] = neighbourPosition;
+                grid[neighbourNode.Coordinate.X, neighbourNode.Coordinate.Z] = neighbourNode;
 
                 if (wasInOpenSet)
                 {
-                    openSet.Add(neighbourPosition);
+                    openSet.Add(neighbourNode);
                 }
             }
         }
 
-        private static void InvestigateNewPath(PathNode[,] grid, SortedSet<PathNode> openSet, PathNode position, PathNode neighbourPosition)
+        private static void InvestigateNewPath(PathNode[,] grid, SortedSet<PathNode> openSet, PathNode node, PathNode neighbourNode)
         {
-            neighbourPosition.GCost = position.GCost + 1;
-            neighbourPosition.FCost = neighbourPosition.GCost + neighbourPosition.HCost;
-            neighbourPosition.Parent = position;
+            neighbourNode.GCost = node.GCost + 1;
+            neighbourNode.FCost = neighbourNode.GCost + neighbourNode.HCost;
+            neighbourNode.Parent = node;
 
-            grid[neighbourPosition.Coordinate.X, neighbourPosition.Coordinate.Z] = neighbourPosition;
+            grid[neighbourNode.Coordinate.X, neighbourNode.Coordinate.Z] = neighbourNode;
 
-            openSet.Add(neighbourPosition);
+            openSet.Add(neighbourNode);
         }
 
         private static PathNode[,] CreateGrid(Coordinate startPosition, Coordinate endPosition, int dungeonRadius)
@@ -117,49 +117,49 @@ namespace Assets.Scripts
             {
                 for (int z = 0; z < dungeonRadius; z++)
                 {
-                    PathNode position = new(x, z);
-                    grid[x, z] = position;
+                    PathNode node = new(x, z);
+                    grid[x, z] = node;
 
-                    CalculatePositionCosts(position, startPosition, endPosition);
+                    CalculatePositionCosts(node, startPosition, endPosition);
                 }
             }
 
             return grid;
         }
 
-        private static void CalculatePositionCosts(PathNode position, Coordinate startPosition, Coordinate endPosition)
+        private static void CalculatePositionCosts(PathNode node, Coordinate startPosition, Coordinate endPosition)
         {
-            float distanceStart = Coordinate.CalculateEuclideanDistance(startPosition, position.Coordinate);
-            float distanceEnd = Coordinate.CalculateEuclideanDistance(position.Coordinate, endPosition);
-            position.GCost = Mathf.RoundToInt(distanceStart);
-            position.HCost = Mathf.RoundToInt(distanceEnd);
-            position.FCost = position.GCost + position.HCost;
+            float distanceStart = Coordinate.CalculateEuclideanDistance(startPosition, node.Coordinate);
+            float distanceEnd = Coordinate.CalculateEuclideanDistance(node.Coordinate, endPosition);
+            node.GCost = Mathf.RoundToInt(distanceStart);
+            node.HCost = Mathf.RoundToInt(distanceEnd);
+            node.FCost = node.GCost + node.HCost;
         }
 
-        private static List<PathNode> GetCurrentNeighbours(PathNode currentPosition, PathNode[,] grid, int dungeonRadius)
+        private static List<PathNode> GetCurrentNeighbours(PathNode currentNode, PathNode[,] grid, int dungeonRadius)
         {
-            List<PathNode> neighbours = new();
+            List<PathNode> neighbourNodes = new();
 
             for (int x = -1; x <= 1; x++)
             {
                 for (int z = -1; z <= 1; z++)
                 {
-                    int neighbourX = currentPosition.Coordinate.X + x;
-                    int neighbourZ = currentPosition.Coordinate.Z + z;
+                    int neighbourX = currentNode.Coordinate.X + x;
+                    int neighbourZ = currentNode.Coordinate.Z + z;
                     bool validBoundsX = neighbourX >= 0 && neighbourX < dungeonRadius;
                     bool validBoundsZ = neighbourZ >= 0 && neighbourZ < dungeonRadius;
 
                     if (validBoundsX && validBoundsZ)
                     {
-                        PathNode position = grid[neighbourX, neighbourZ];
-                        neighbours.Add(position);
+                        PathNode node = grid[neighbourX, neighbourZ];
+                        neighbourNodes.Add(node);
                     }
                 }
             }
 
-            neighbours.Remove(currentPosition);
+            neighbourNodes.Remove(currentNode);
 
-            return neighbours;
+            return neighbourNodes;
         }
     }
 }
