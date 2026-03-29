@@ -9,10 +9,14 @@ namespace Assets.Scripts
         [SerializeField] private Transform _wallParent;
         [SerializeField] private Material _floorMaterial;
         [SerializeField] private Material _wallMaterial;
+        [SerializeField] private Enemy _meleeEnemyPrefab;
+        [SerializeField] private Enemy _rangedEnemyPrefab;
+        [SerializeField] private Transform _enemyParent;
 
         private RoomPlacer _roomPlacer;
         private TunnelPlacer _tunnelPlacer;
         private DungeonRenderer _renderer;
+        private EnemySpawner _spawner;
         private DungeonGrid _grid;
 
         public void Awake()
@@ -20,6 +24,7 @@ namespace Assets.Scripts
             _roomPlacer = new();
             _tunnelPlacer = new();
             _renderer = new DungeonRenderer(_floorParent, _wallParent, _floorMaterial, _wallMaterial);
+            _spawner = new EnemySpawner(_meleeEnemyPrefab, _rangedEnemyPrefab, _enemyParent);
         }
 
         public void Initialize(int roomCount, int dungeonRadius)
@@ -36,6 +41,7 @@ namespace Assets.Scripts
             }
 
             _renderer.Render(_grid);
+            _spawner.SpawnEnemies(_grid, 0);
         }
 
         public Coordinate GetStartRoomCenter() => _grid.GetRoom(0).Center;

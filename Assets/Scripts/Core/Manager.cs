@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UI;
 using Debug = UnityEngine.Debug;
@@ -16,6 +17,7 @@ namespace Assets.Scripts
         private InputField _roomCountInput;
         private Dungeon _dungeon;
         private Player _player;
+        private Coordinate _startRoomCenter;
 
         private const int MinRoomRadius = 20;
 
@@ -51,11 +53,29 @@ namespace Assets.Scripts
             _dungeon.Initialize(_roomCount, roomRadius);
 
             Coordinate startRoom = _dungeon.GetStartRoomCenter();
-            _player = Instantiate(_playerPrefab, new Vector3(startRoom.X, 0.5f, startRoom.Z), Quaternion.identity);
+            _startRoomCenter = startRoom;
+            // Ensure player spawns at integer cell center
+            _player = Instantiate(_playerPrefab, new Vector3(Mathf.Floor(startRoom.X) + 0.5f, 0.5f, Mathf.Floor(startRoom.Z) + 0.5f), Quaternion.identity);
             _cameraFollow.SetTarget(_player.transform);
+
+            Health playerHealth = _player.GetComponent<Health>();
+            if (playerHealth != null)
+                playerHealth.OnDeath += OnPlayerDeath;
 
             stopwatch.Stop();
             Debug.Log($"Execution time: {stopwatch.ElapsedMilliseconds}");
+        }
+
+        private void OnPlayerDeath()
+        {
+            StartCoroutine(RespawnPlayer());
+        }
+
+        private IEnumerator RespawnPlayer()
+        {
+            yield return new WaitForSeconds(1f);
+            _player.GetComponent<Health>().ResetHealth();
+            _player.transform.position = new Vector3(_startRoomCenter.X, 0.5f, _startRoomCenter.Z);
         }
 
         private int GetRoomRadius() => Mathf.Max(_roomCount * 3, MinRoomRadius);
