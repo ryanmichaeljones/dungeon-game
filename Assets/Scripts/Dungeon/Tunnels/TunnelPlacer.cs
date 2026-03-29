@@ -1,54 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
-using Object = UnityEngine.Object;
+﻿using System.Collections.Generic;
 
 namespace Assets.Scripts
 {
     public class TunnelPlacer
     {
-        private readonly Tunnel _tunnelPrefab;
-        private readonly Transform _tunnelsParent;
-
-        private const float TunnelPositionY = 0.0f;
-        private const float TunnelOffset = 0.05f;
-
-        public TunnelPlacer(Tunnel tunnelPrefab, Transform tunnelsParent)
-        {
-            _tunnelPrefab = tunnelPrefab;
-            _tunnelsParent = tunnelsParent;
-        }
-
-        public void PlaceTunnels(List<Coordinate> path, Func<float, float, bool> isInsideRoom)
+        public void PlaceTunnels(List<Coordinate> path, DungeonGrid grid)
         {
             for (int i = 0; i < path.Count - 1; i++)
             {
                 Coordinate from = path[i];
                 Coordinate to = path[i + 1];
 
-                for (float t = 0; t < 1; t += TunnelOffset)
-                {
-                    Vector3 vector = new(to.X - from.X, 0.0f, to.Z - from.Z);
-                    float tunnelX = from.X + t * vector.x;
-                    float tunnelZ = from.Z + t * vector.z;
+                int dx = to.X - from.X;
+                int dz = to.Z - from.Z;
 
-                    if (!isInsideRoom(tunnelX, tunnelZ))
-                    {
-                        CreateTunnel(from.X, from.Z, t * vector);
-                    }
+                // Mark the start cell and perpendicular neighbors for corridor width
+                grid.MarkCell(from.X, from.Z);
+
+                if (dx != 0 && dz == 0)
+                {
+                    // Horizontal movement — expand perpendicular (Z axis)
+                    grid.MarkCell(from.X, from.Z - 1);
+                    grid.MarkCell(from.X, from.Z + 1);
+                }
+                else if (dz != 0 && dx == 0)
+                {
+                    // Vertical movement — expand perpendicular (X axis)
+                    grid.MarkCell(from.X - 1, from.Z);
+                    grid.MarkCell(from.X + 1, from.Z);
+                }
+                else
+                {
+                    // Diagonal — expand both axes for wider junction
+                    grid.MarkCell(from.X - 1, from.Z);
+                    grid.MarkCell(from.X + 1, from.Z);
+                    grid.MarkCell(from.X, from.Z - 1);
+                    grid.MarkCell(from.X, from.Z + 1);
                 }
             }
-        }
 
-        private void CreateTunnel(int x, int z, Vector3 offset)
-        {
-            Tunnel newTunnel = Object.Instantiate(_tunnelPrefab);
-            float positionX = x + offset.x;
-            float positionZ = z + offset.z;
-
-            newTunnel.name = $"{x}, {z}";
-            newTunnel.transform.parent = _tunnelsParent;
-            newTunnel.transform.localPosition = new Vector3(positionX, TunnelPositionY, positionZ);
+            // Mark the last cell in the path
+            if (path.Count > 0)
+            {
+                Coordinate last = path[^1];
+                grid.MarkCell(last.X, last.Z);
+                grid.MarkCell(last.X - 1, last.Z);
+                grid.MarkCell(last.X + 1, last.Z);
+                grid.MarkCell(last.X, last.Z - 1);
+                grid.MarkCell(last.X, last.Z + 1);
+            }
         }
     }
 }

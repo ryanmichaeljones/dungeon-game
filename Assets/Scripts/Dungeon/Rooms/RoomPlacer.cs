@@ -1,33 +1,24 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using UnityEngine;
-using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 namespace Assets.Scripts
 {
     public class RoomPlacer
     {
-        private readonly List<Rect> _roomBounds = new();
-        private readonly Room _roomPrefab;
-        private readonly Transform _roomsParent;
+        private DungeonGrid _grid;
 
-        private const int RoomOverlapThreshold = 2; // consider the dungeon room size from coordinate
-        private const float MinRoomWidth = 1.5f;
-        private const float MaxRoomWidth = 2.5f;
-        private const float MinRoomHeight = 1.5f;
-        private const float MaxRoomHeight = 2.5f;
-        private const float RoomScaleY = 0.2f;
-        private const float RoomPositionY = 0.0f;
+        private const int RoomOverlapThreshold = 5;
+        private const int MinRoomHalf = 1;  // half-extent: room will be 3 cells min (1+1+center)
+        private const int MaxRoomHalf = 3;  // half-extent: room will be 7 cells max (3+1+3)
 
-        public RoomPlacer(Room roomPrefab, Transform roomsParent)
+        public RoomPlacer() { }
+
+        public ReadOnlyCollection<Coordinate> PlaceRooms(int roomCount, int dungeonRadius, DungeonGrid grid)
         {
-            _roomPrefab = roomPrefab;
-            _roomsParent = roomsParent;
-        }
+            _grid = grid;
 
-        public ReadOnlyCollection<Coordinate> PlaceRooms(int roomCount, int dungeonRadius)
-        {
             List<Coordinate> validPositions = GetValidRoomPositions(dungeonRadius);
             List<Coordinate> roomPositions = new();
 
@@ -75,30 +66,11 @@ namespace Assets.Scripts
 
         private void CreateRoom(int x, int z)
         {
-            Room newRoom = Object.Instantiate(_roomPrefab);
-            float width = Random.Range(MinRoomWidth, MaxRoomWidth);
-            float height = Random.Range(MinRoomHeight, MaxRoomHeight);
-            float scaleX = newRoom.transform.localScale.x * width;
-            float scaleZ = newRoom.transform.localScale.z * height;
-
-            newRoom.name = $"{x}, {z}";
-            newRoom.transform.parent = _roomsParent;
-            newRoom.transform.localScale = new Vector3(scaleX, RoomScaleY, scaleZ);
-            newRoom.transform.localPosition = new Vector3(x, RoomPositionY, z);
-
-            _roomBounds.Add(new Rect(x - scaleX / 2f, z - scaleZ / 2f, scaleX, scaleZ));
+            int halfW = Random.Range(MinRoomHalf, MaxRoomHalf + 1);
+            int halfH = Random.Range(MinRoomHalf, MaxRoomHalf + 1);
+            _grid.MarkRect(x, z, halfW, halfH);
         }
 
-        public bool IsInsideAnyRoom(float worldX, float worldZ)
-        {
-            foreach (Rect bounds in _roomBounds)
-            {
-                if (bounds.Contains(new Vector2(worldX, worldZ)))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+        public bool IsInsideAnyRoom(float worldX, float worldZ) => _grid.IsFloor(Mathf.RoundToInt(worldX), Mathf.RoundToInt(worldZ));
     }
 }
